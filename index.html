@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Practice Studio — Violin / Viola</title>
+<style>
+:root{--bg:#0f1420;--card:#1a2232;--card2:#222c40;--line:#2e3a52;--txt:#e8edf7;--mut:#93a1bd;--acc:#f0a830;--acc2:#4aa3ff;--ok:#39c17f;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:'Segoe UI',Tahoma,sans-serif;padding:16px}
+.wrap{max-width:900px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:0 0 12px;color:var(--acc)}h3{font-size:15px;margin:0 0 6px}
+.mut{color:var(--mut);font-size:13px}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#121a28;color:var(--txt);font-family:inherit;font-size:14px}
+button{border:none;border-radius:8px;padding:11px 16px;font-size:14px;font-weight:600;cursor:pointer;background:var(--acc2);color:#fff;font-family:inherit}
+button:hover{opacity:.88}
+.btn-g{background:var(--ok)}.btn-d{background:#3a465e}.btn-r{background:var(--bad)}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row>*{flex:1;min-width:120px}
+.hidden{display:none!important}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:10px;text-align:center}
+.stat{background:var(--card2);border-radius:10px;padding:10px}
+.stat b{display:block;font-size:20px;color:var(--acc)}
+.sec{background:var(--card2);border-left:4px solid var(--acc2);border-radius:10px;padding:14px;margin-bottom:12px}
+.sec.own{border-left-color:var(--acc)}
+.task{background:#141c2b;border-radius:8px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}
+.star{font-size:26px;color:#3a465e;cursor:pointer;margin-right:3px;user-select:none}
+.star.on{color:var(--acc)}
+.badge{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:4px 11px;font-size:12px;margin:3px 3px 0 0}
+.badge.got{background:#3b2f10;border-color:var(--acc);color:var(--acc)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--mut);font-weight:600}
+tr.clk:hover{background:var(--card2);cursor:pointer}
+.log{background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1}
+.legend{font-size:12px;color:var(--mut);margin:2px 0 10px}
+.lg1,.lg2{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 5px 0 12px}
+.lg1{background:#4aa3ff}.lg2{background:#f0a830;border-radius:50%}
+canvas{width:100%;display:block}
+.delta{font-weight:700}
+</style>
+</head>
+<body><div class="wrap">
+
+<!-- ====== LOGIN ====== -->
+<div id="vLogin">
+  <div class="card">
+    <h1>🎻 Daily Practice Studio</h1>
+    <p class="mut">ระบบฝึกซ้อมไวโอลิน / วิโอล่า ประจำวัน — สุ่มบันไดเสียง กรอกบทเพลงเอง บันทึกผล และดูกราฟพัฒนาการ</p>
+    <div class="row" style="margin-top:14px">
+      <div><label class="mut">ชื่อ–นามสกุล</label><input id="inName" placeholder="เช่น ปิยะ รักดนตรี"></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div><label class="mut">เครื่องดนตรี</label>
+        <select id="inInst"><option value="violin">ไวโอลิน (Violin)</option><option value="viola">วิโอล่า (Viola)</option></select></div>
+      <div><label class="mut">ระดับ</label>
+        <select id="inLv">
+          <option value="beginner">ต้น (Suzuki 1–3)</option>
+          <option value="intermediate">กลาง (Suzuki 4–7 / Kreutzer)</option>
+          <option value="advanced">สูง (Concerto / Caprices)</option>
+        </select></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn-g" onclick="login()">เข้าสู่ห้องซ้อม</button>
+      <button class="btn-d" onclick="teacherLogin()">โหมดครูผู้สอน</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== STUDENT ====== -->
+<div id="vStudent" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><h1 id="sName"></h1><span class="mut" id="sMeta"></span></div>
+      <button class="btn-d" style="padding:8px 12px" onclick="logout()">ออก</button>
+    </div>
+    <div class="stats" style="margin-top:14px">
+      <div class="stat"><b id="stStreak">0</b><span class="mut">🔥 วันติดต่อกัน</span></div>
+      <div class="stat"><b id="stLv">1</b><span class="mut">⭐ เลเวล</span></div>
+      <div class="stat"><b id="stMin">0</b><span class="mut">⏱ นาทีสะสม</span></div>
+      <div class="stat"><b id="stAvg">-</b><span class="mut">📈 คะแนนเฉลี่ย</span></div>
+    </div>
+    <div id="badges" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h2 style="margin:0">📋 โปรแกรมวันนี้ <span class="mut" id="todayLbl"></span></h2>
+      <button class="btn-d" style="padding:7px 11px;font-size:12px" onclick="reroll()">🎲 สุ่มบันไดเสียงใหม่</button>
+    </div>
+    <p class="mut" style="margin-top:0">บันไดเสียงและวอร์มอัพถูกสุ่มล็อกไว้ตลอดวัน ส่วนแบบฝึกหัดและบทเพลงให้กรอกชื่อเองตามที่ครูสั่ง</p>
+    <div id="plan"></div>
+  </div>
+
+  <div class="card">
+    <h2>📈 กราฟพัฒนาการรายสัปดาห์</h2>
+    <div id="sumBox" class="mut"></div>
+    <div class="legend"><span class="lg1"></span>นาทีที่ซ้อม <span class="lg2"></span>คะแนนเฉลี่ย (เต็ม 5)</div>
+    <canvas id="cvWeek"></canvas>
+    <h3 style="margin-top:16px">รายวัน 7 วันล่าสุด</h3>
+    <canvas id="cvDay"></canvas>
+  </div>
+
+  <div class="card">
+    <label class="mut">บันทึกถึงครู / สิ่งที่ติดปัญหา</label>
+    <textarea id="dayNote" rows="3" placeholder="เช่น ท่อนขึ้นตำแหน่ง 3 เสียงยังเพี้ยน อยากให้ครูช่วยดูการวางนิ้ว"></textarea>
+    <button class="btn-g" style="width:100%;margin-top:12px" onclick="saveLog()">💾 บันทึกการซ้อมวันนี้</button>
+  </div>
+
+  <div class="card"><h2>🗂 ประวัติการซ้อมของฉัน</h2><div id="myLogsBox"></div></div>
+</div>
+
+<!-- ====== TEACHER ====== -->
+<div id="vTeacher" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><h1>👩‍🏫 แดชบอร์ดครูผู้สอน</h1><span class="mut" id="tSum"></span></div>
+      <button class="btn-d" style="padding:8px 12px" onclick="logout()">ออก</button>
+    </div>
+    <div class="tabs" style="margin-top:14px">
+      <button class="btn-d" onclick="exportCSV()">⬇ ส่งออก CSV</button>
+      <button class="btn-d" onclick="backup()">💾 สำรองข้อมูล</button>
+      <button class="btn-r" onclick="wipe()">🗑 ล้างข้อมูล</button>
+    </div>
+  </div>
+  <div class="card"><h2>รายชื่อนักเรียน</h2><div style="overflow-x:auto"><table id="tTable"></table></div></div>
+  <div class="card" id="tDetailCard"><h2>รายละเอียดและกราฟรายบุคคล</h2><div id="tDetail" class="mut">คลิกชื่อนักเรียนเพื่อดูกราฟและบันทึกย้อนหลัง</div></div>
+</div>
+
+<script>
+/* ================= 1. คลังข้อมูล (บันไดเสียง = สุ่ม / etude-rep = ใช้เป็นรายการแนะนำ) ================= */
+const BANK={
+ violin:{keys:{beginner:["A Major","D Major","G Major","C Major","A minor (harmonic)","E minor (natural)"],
+   intermediate:["G Major","Bb Major","Eb Major","F Major","D Major","B minor (melodic)","C# minor (harmonic)","G minor (harmonic)"],
+   advanced:["Ab Major","Db Major","E Major","B Major","F# minor (melodic)","Bb minor (harmonic)","C minor (melodic)","A Major"]},
+  rep:{beginner:["Twinkle Variations (Suzuki 1)","Gossec: Gavotte","Bach: Minuet No.2","Handel: Bourrée","Weber: Hunters' Chorus"],
+   intermediate:["Seitz: Concerto No.2 Mvt.1","Vivaldi: Concerto in a minor Mvt.1","Bach: Double Concerto","Accolay: Concerto in a minor","Elgar: Salut d'Amour"],
+   advanced:["Bruch: Concerto No.1 Mvt.1","Mozart: Concerto No.3 Mvt.1","Bach: Partita No.3 Preludio","Massenet: Méditation","Kreisler: Praeludium and Allegro"]},
+  etude:{beginner:["Wohlfahrt Op.45 No.3","Wohlfahrt Op.45 No.7","Sevcik Op.6 Part 1","Schradieck Book 1 No.1","Hrimaly: Scale Studies"],
+   intermediate:["Kayser Op.20 No.5","Mazas Op.36 No.2","Kreutzer No.2","Sitt Op.32 Book 2","Sevcik Op.2"],
+   advanced:["Kreutzer No.8","Dont Op.35 No.4","Rode: Caprice No.2","Fiorillo: Etude No.6","Sevcik Op.1 Part 3"]}},
+ viola:{keys:{beginner:["D Major","G Major","C Major","F Major","A minor (harmonic)","D minor (natural)"],
+   intermediate:["C Major","Bb Major","Eb Major","G Major","A Major","G minor (harmonic)","F# minor (melodic)","D minor (melodic)"],
+   advanced:["Ab Major","Db Major","E Major","B Major","C minor (melodic)","Bb minor (harmonic)","F# minor (harmonic)","C Major"]},
+  rep:{beginner:["Twinkle Variations (Suzuki Viola 1)","Gossec: Gavotte","Bach: Minuet No.2","Schumann: The Happy Farmer"],
+   intermediate:["Telemann: Viola Concerto in G Mvt.1","Marcello: Sonata in e minor","Bach: Cello Suite No.1 Prelude","Bréval: Sonata in C"],
+   advanced:["Hoffmeister: Viola Concerto in D","Stamitz: Viola Concerto in D","Bruch: Romanze Op.85","Schumann: Märchenbilder No.1"]},
+  etude:{beginner:["Wohlfahrt Op.45 No.2 (viola)","Sevcik Op.6 (viola)","Schradieck (viola) Book 1","Kayser Op.20 No.1"],
+   intermediate:["Kayser Op.20 No.7","Mazas Op.36 (viola) No.3","Kreutzer No.2 (viola)","Campagnoli Op.22 No.1"],
+   advanced:["Campagnoli: 41 Caprices No.7","Kreutzer No.13 (viola)","Palaschko Op.44","Flesch: Scale System (viola)"]}}};
+
+const OCT={beginner:["1 อ็อกเทฟ","2 อ็อกเทฟ"],intermediate:["2 อ็อกเทฟ","3 อ็อกเทฟ"],advanced:["3 อ็อกเทฟ","3 อ็อกเทฟ + broken thirds"]};
+const PAT=["โบว์แยก (détaché) ตัวละโบว์","สเลอ 2 ตัวต่อโบว์","สเลอ 4 ตัวต่อโบว์","สเลอ 8 ตัวต่อโบว์","มาร์เตเล่ (martelé) ครึ่งโบว์บน","จังหวะประ (dotted rhythm)","สแตคคาโต 4 ตัวต่อโบว์","โน้ตสามพยางค์ (triplet) สเลอ 3","สปิคคาโต กลางโบว์","เสียงยาวเต็มโบว์ โน้ตละ 4 จังหวะ"];
+const WARM=["โบว์ยาวสายเปล่า (son filé) สายละ 8 จังหวะ ♩=50 — ฟังเสียงให้นิ่งไม่สั่น","แบ่งโบว์ 4 ท่อน: ปลาย/กลางบน/กลางล่าง/โคน สายละ 2 รอบ","Schradieck รูปนิ้ว 4 แบบ บนสาย D ช้า ๆ ไม่ยกนิ้วสูง","ดีดสายด้วยนิ้วซ้าย (left-hand pizzicato) นิ้ว 1-2-3-4 สายละ 8 ครั้ง","ฮาร์โมนิกธรรมชาติ ตำแหน่งครึ่งสาย ไล่ทั้ง 4 สาย","ฝึกไวบราโต: โยกข้อมือช้า 4 ครั้ง/จังหวะ ♩=60 สายละ 1 นาที","ไล่เลื่อนตำแหน่ง 1→3→1 ด้วยนิ้ว 1 แบบเสียงต่อเนื่อง","ข้ามสาย (string crossing) Sevcik Op.3 — ข้อศอกขวานิ่ง","ดับเบิลสต็อป: คู่ 8 (octave) บนสาย G-D ช้า ๆ ตรวจเสียงกังวาน","ยืดกล้ามเนื้อไหล่–คอ–นิ้ว 2 นาที ก่อนจับเครื่อง"];
+const CHAL=["ปิดตาเล่นบันไดเสียงวันนี้ 1 รอบ — เช็กความจำของมือ","อ่านโน้ตใหม่ (sight-reading) 8 ห้อง จากหนังสือที่ยังไม่เคยเล่น","ฟังนักดนตรีระดับโลกเล่นบทเพลงของคุณ 1 คลิป แล้วจดสิ่งที่ต่างจากของเรา 1 ข้อ","เล่นท่อนที่ยากที่สุด 5 รอบติดโดยไม่ผิด ถ้าผิดเริ่มนับใหม่","ร้องทำนองท่อนที่ซ้อมออกมาก่อน แล้วค่อยเล่นตามที่ร้อง","ตั้งเมโทรนอมช้ากว่าปกติ 20% แล้วเล่นให้ตรงเป๊ะทุกตัว","เล่นบทเพลงโดยใช้ไดนามิกตรงข้าม (ที่ดังให้เบา) เพื่อฝึกควบคุมโบว์","เล่นท่อนเดิม 3 รอบ โดยเปลี่ยนจุดโบว์: โคน / กลาง / ปลาย"];
+const TEMPO={beginner:[50,80],intermediate:[66,112],advanced:[84,144]};
+const BADGES=[{d:3,n:"🌱 เริ่มต้นดี 3 วัน"},{d:7,n:"🔥 นักซ้อม 1 สัปดาห์"},{d:14,n:"💪 วินัยเหล็ก 14 วัน"},{d:30,n:"🏆 แชมป์ 30 วัน"},{d:100,n:"👑 ตำนาน 100 วัน"}];
+
+/* ================= 2. ตัวสุ่มแบบล็อกรายวัน ================= */
+function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rngOf(seed){let a=hash(seed);return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const pick=(r,a)=>a[Math.floor(r()*a.length)];
+const today=()=>new Date().toISOString().slice(0,10);
+
+function makePlan(st,salt=0){
+ const r=rngOf(st.name+st.inst+st.lv+today()+salt), B=BANK[st.inst], L=st.lv;
+ const tp=TEMPO[L], bpm=Math.round((tp[0]+r()*(tp[1]-tp[0]))/4)*4, slow=Math.round(bpm*0.7/2)*2;
+ const key=pick(r,B.keys[L]);
+ return[
+ {t:"1. วอร์มอัพร่างกายและโบว์",m:8,type:"fix",d:[pick(r,WARM),pick(r,WARM)]},
+ {t:"2. บันไดเสียง & อาร์เปจจิโอ (สุ่มประจำวัน)",m:12,type:"fix",
+  d:[`<b>${key}</b> — ${pick(r,OCT[L])}`,`รูปแบบ: ${pick(r,PAT)} &nbsp;|&nbsp; ♩=${bpm}`,`ต่อด้วยอาร์เปจจิโอของ ${key} ขึ้น–ลง 2 รอบ`]},
+ {t:"3. แบบฝึกหัดเทคนิค (กรอกเอง)",m:15,type:"own",key:"etude",
+  ph:"พิมพ์ชื่อแบบฝึกหัด เช่น Kreutzer No.2 ห้อง 1–16",
+  tip:`เริ่มช้าที่ ♩=${slow} แล้วเพิ่มทีละ 4 จนถึง ♩=${bpm} — หยุดทันทีเมื่อเริ่มผิดซ้ำที่เดิม`,
+  list:B.etude[L]},
+ {t:"4. บทเพลงหลัก (กรอกเอง)",m:20,type:"own",key:"rep",
+  ph:"พิมพ์ชื่อบทเพลง เช่น Seitz Concerto No.2 Mvt.1 (พิมพ์หลายเพลงคั่นด้วย , ได้)",
+  tip:"แบ่งซ้อมเป็นท่อน ท่อนละ 4–8 ห้อง ซ้ำท่อนที่ผิดอย่างน้อย 3 รอบช้า ๆ ก่อนต่อเพลง",
+  list:B.rep[L]},
+ {t:"5. ภารกิจประจำวัน (Daily Challenge)",m:5,type:"fix",d:[pick(r,CHAL)]}];
+}
+
+/* ================= 3. ที่เก็บข้อมูล ================= */
+const get=k=>JSON.parse(localStorage.getItem(k)||"[]");
+const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const logsOf=n=>get("vp_logs").filter(l=>l.name===n).sort((a,b)=>b.date.localeCompare(a.date));
+const asgGet=n=>JSON.parse(localStorage.getItem("vp_asg_"+n)||'{"etude":"","rep":""}');
+const libGet=n=>JSON.parse(localStorage.getItem("vp_lib_"+n)||'{"etude":[],"rep":[]}');
+let me=null,plan=[],scores=[],salt=0,timers={};
+
+/* ================= 4. เข้าสู่ระบบ ================= */
+function show(id){["vLogin","vStudent","vTeacher"].forEach(v=>document.getElementById(v).classList.toggle("hidden",v!==id));}
+function login(){
+ const n=inName.value.trim();if(!n)return alert("กรุณากรอกชื่อก่อนครับ");
+ me={name:n,inst:inInst.value,lv:inLv.value};
+ const ss=get("vp_students");const i=ss.findIndex(s=>s.name===n);
+ if(i<0)ss.push(me);else ss[i]=me;set("vp_students",ss);
+ sessionStorage.setItem("vp_me",JSON.stringify(me));salt=0;
+ show("vStudent");renderStudent();
+}
+function teacherLogin(){
+ const p=prompt("รหัสผ่านครูผู้สอน:");if(p===null)return;
+ if(p!=="teacher1234")return alert("รหัสผ่านไม่ถูกต้อง");
+ show("vTeacher");renderTeacher();
+}
+function logout(){sessionStorage.removeItem("vp_me");me=null;location.reload();}
+
+/* ================= 5. กราฟ (Canvas ล้วน) ================= */
+function mondayOf(d){const x=new Date(d+"T00:00:00");const w=(x.getDay()+6)%7;x.setDate(x.getDate()-w);return x.toISOString().slice(0,10);}
+function weekly(L,n=8){
+ const cur=mondayOf(today()),out=[];
+ for(let i=n-1;i>=0;i--){
+  const d=new Date(cur+"T00:00:00");d.setDate(d.getDate()-i*7);
+  const k=d.toISOString().slice(0,10),W=L.filter(l=>mondayOf(l.date)===k),sc=W.filter(l=>l.avg>0);
+  out.push({k,min:W.reduce((a,b)=>a+b.total,0),days:new Set(W.map(l=>l.date)).size,
+   avg:sc.length?sc.reduce((a,b)=>a+b.avg,0)/sc.length:0});}
+ return out;
+}
+function daily(L,n=7){
+ const out=[],TH=["อา","จ","อ","พ","พฤ","ศ","ส"];
+ for(let i=n-1;i>=0;i--){
+  const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10);
+  const D=L.filter(l=>l.date===k),sc=D.filter(l=>l.avg>0);
+  out.push({label:TH[d.getDay()],bar:D.reduce((a,b)=>a+b.total,0),
+   line:sc.length?sc.reduce((a,b)=>a+b.avg,0)/sc.length:0});}
+ return out;
+}
+function drawChart(cv,rows){
+ if(!cv)return;
+ const dpr=window.devicePixelRatio||1,W=cv.clientWidth||620,H=190;
+ cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+"px";
+ const c=cv.getContext("2d");c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);
+ const pl=40,pr=34,pt=16,pb=26,w=W-pl-pr,h=H-pt-pb;
+ const maxB=Math.max(20,...rows.map(r=>r.bar))*1.2;
+ c.font="10px sans-serif";c.lineWidth=1;
+ for(let i=0;i<=4;i++){const y=pt+h*i/4;
+  c.strokeStyle="#2e3a52";c.beginPath();c.moveTo(pl,y);c.lineTo(pl+w,y);c.stroke();
+  c.fillStyle="#93a1bd";c.textAlign="right";c.fillText(Math.round(maxB*(1-i/4)),pl-6,y+3);
+  c.textAlign="left";c.fillStyle="#f0a830";c.fillText((5*(1-i/4)).toFixed(1),pl+w+6,y+3);}
+ const n=rows.length,bw=Math.min(38,w/n*0.56);
+ rows.forEach((r,i)=>{
+  const x=pl+w*(i+.5)/n,bh=h*Math.min(r.bar,maxB)/maxB;
+  if(bh>0){const g=c.createLinearGradient(0,pt+h-bh,0,pt+h);
+   g.addColorStop(0,"#4aa3ff");g.addColorStop(1,"#1d4e80");c.fillStyle=g;
+   c.fillRect(x-bw/2,pt+h-bh,bw,bh);
+   c.fillStyle="#e8edf7";c.textAlign="center";c.fillText(r.bar,x,pt+h-bh-5);}
+  c.fillStyle="#93a1bd";c.textAlign="center";c.fillText(r.label,x,H-8);});
+ c.strokeStyle="#f0a830";c.lineWidth=2;c.beginPath();let st=false;
+ rows.forEach((r,i)=>{if(!r.line)return;const x=pl+w*(i+.5)/n,y=pt+h-h*r.line/5;
+  st?c.lineTo(x,y):c.moveTo(x,y);st=true;});
+ c.stroke();
+ rows.forEach((r,i)=>{if(!r.line)return;const x=pl+w*(i+.5)/n,y=pt+h-h*r.line/5;
+  c.fillStyle="#f0a830";c.beginPath();c.arc(x,y,3.5,0,7);c.fill();});
+}
+function renderCharts(wkId,dyId,sumId,L){
+ const W=weekly(L,8);
+ drawChart(document.getElementById(wkId),W.map(r=>({label:r.k.slice(8,10)+"/"+r.k.slice(5,7),bar:r.min,line:r.avg})));
+ drawChart(document.getElementById(dyId),daily(L,7));
+ const box=document.getElementById(sumId);if(!box)return;
+ const cu=W[7],pv=W[6];
+ const dm=cu.min-pv.min, pct=pv.min?Math.round(dm/pv.min*100):null;
+ const ds=(cu.avg&&pv.avg)?(cu.avg-pv.avg):null;
+ const col=v=>v>0?"#39c17f":v<0?"#ff6b6b":"#93a1bd";
+ box.innerHTML=`สัปดาห์นี้ซ้อม <b style="color:#f0a830">${cu.min} นาที</b> จาก <b>${cu.days}</b> วัน
+  &nbsp;|&nbsp; เทียบสัปดาห์ก่อน <span class="delta" style="color:${col(dm)}">${dm>=0?"+":""}${dm} นาที${pct!==null?` (${dm>=0?"+":""}${pct}%)`:""}</span>
+  ${ds!==null?`&nbsp;|&nbsp; คะแนนเฉลี่ย <span class="delta" style="color:${col(ds)}">${ds>=0?"+":""}${ds.toFixed(2)}</span> (${cu.avg.toFixed(2)}/5)`:""}`;
+}
+
+/* ================= 6. หน้านักเรียน ================= */
+function calcStreak(dates){
+ const u=[...new Set(dates)].sort().reverse();if(!u.length)return 0;
+ const gap=(new Date(today())-new Date(u[0]))/864e5;
+ if(gap>2)return 0;let s=1,freeze=1;
+ for(let i=1;i<u.length;i++){const g=(new Date(u[i-1])-new Date(u[i]))/864e5;
+  if(g===1)s++;else if(g===2&&freeze){freeze--;s++;}else break;}
+ return s;
+}
+function renderStudent(){
+ sName.textContent="สวัสดี "+me.name;
+ sMeta.textContent=(me.inst==="violin"?"ไวโอลิน":"วิโอล่า")+" • ระดับ"+({beginner:"ต้น",intermediate:"กลาง",advanced:"สูง"})[me.lv];
+ todayLbl.textContent="("+today()+")";
+ const L=logsOf(me.name),streak=calcStreak(L.map(l=>l.date));
+ const tot=L.reduce((a,b)=>a+b.total,0),sc=L.filter(l=>l.avg>0);
+ stStreak.textContent=streak;stMin.textContent=tot;stLv.textContent=Math.floor(tot/150)+1;
+ stAvg.textContent=sc.length?(sc.reduce((a,b)=>a+b.avg,0)/sc.length).toFixed(1):"-";
+ badges.innerHTML=BADGES.map(b=>`<span class="badge ${streak>=b.d?"got":""}">${b.n}</span>`).join("");
+
+ plan=makePlan(me,salt);scores=plan.map(()=>0);
+ const asg=asgGet(me.name),lib=libGet(me.name);
+ document.getElementById("plan").innerHTML=plan.map((s,i)=>{
+  const body=s.type==="own"
+   ? `<input id="ti${i}" list="dl${i}" value="${(asg[s.key]||"").replace(/"/g,"&quot;")}" placeholder="${s.ph}">
+      <datalist id="dl${i}">${[...new Set([...lib[s.key],...s.list])].map(o=>`<option value="${o}">`).join("")}</datalist>
+      <div class="task">💡 ${s.tip}</div>`
+   : s.d.map(x=>`<div class="task">• ${x}</div>`).join("");
+  return `<div class="sec ${s.type==="own"?"own":""}">
+   <h3>${s.t} <span class="mut">(แนะนำ ${s.m} นาที)</span></h3>${body}
+   <div class="row" style="margin-top:8px">
+    <div style="max-width:150px"><label class="mut">นาทีที่ซ้อม</label><input type="number" id="m${i}" value="${s.m}" min="0"></div>
+    <div style="max-width:150px;align-self:flex-end"><button class="btn-d" id="tm${i}" onclick="tick(${i})">▶ จับเวลา</button></div>
+    <div style="align-self:flex-end"><div class="mut">ให้คะแนนตัวเอง</div><div id="st${i}">
+     ${[1,2,3,4,5].map(k=>`<span class="star" onclick="setStar(${i},${k})">★</span>`).join("")}</div></div>
+   </div>
+   <input id="n${i}" placeholder="โน้ตสั้น ๆ ของหัวข้อนี้" style="margin-top:8px"></div>`;}).join("");
+
+ renderCharts("cvWeek","cvDay","sumBox",L);
+ renderMyLogs(L);
+}
+function setStar(i,v){scores[i]=v;[...document.getElementById("st"+i).children].forEach((e,k)=>e.classList.toggle("on",k<v));}
+function tick(i){
+ const b=document.getElementById("tm"+i);
+ if(timers[i]){clearInterval(timers[i].h);document.getElementById("m"+i).value=Math.max(1,Math.round(timers[i].s/60));timers[i]=null;b.textContent="▶ จับเวลา";b.className="btn-d";}
+ else{timers[i]={s:0,h:setInterval(()=>{timers[i].s++;b.textContent="⏸ "+String(Math.floor(timers[i].s/60)).padStart(2,"0")+":"+String(timers[i].s%60).padStart(2,"0");},1000)};b.className="btn-r";}
+}
+function reroll(){if(confirm("สุ่มวอร์มอัพและบันไดเสียงใหม่? ข้อมูลที่กรอกไว้จะหายไป")){salt++;renderStudent();}}
+
+/* ================= 7. บันทึกผล ================= */
+function saveLog(){
+ const asg=asgGet(me.name),lib=libGet(me.name);
+ const secs=plan.map((s,i)=>{
+  let title="",detail="";
+  if(s.type==="own"){title=document.getElementById("ti"+i).value.trim();detail=title+" — "+s.tip;}
+  else detail=s.d.join(" / ").replace(/<[^>]+>/g,"");
+  return{t:s.t,type:s.type,title,detail,min:+document.getElementById("m"+i).value||0,sc:scores[i],note:document.getElementById("n"+i).value};
+ });
+ if(secs.some(s=>s.type==="own"&&!s.title))
+  if(!confirm("ยังไม่ได้กรอกชื่อแบบฝึกหัดหรือบทเพลง ต้องการบันทึกเลยไหม?"))return;
+ if(scores.some(s=>s===0))
+  if(!confirm("ยังให้คะแนนไม่ครบทุกหัวข้อ ต้องการบันทึกเลยไหม?"))return;
+
+ plan.forEach((s,i)=>{if(s.type==="own"&&secs[i].title){asg[s.key]=secs[i].title;
+  if(!lib[s.key].includes(secs[i].title))lib[s.key].unshift(secs[i].title);lib[s.key]=lib[s.key].slice(0,20);}});
+ localStorage.setItem("vp_asg_"+me.name,JSON.stringify(asg));
+ localStorage.setItem("vp_lib_"+me.name,JSON.stringify(lib));
+
+ const g=secs.filter(s=>s.sc>0).map(s=>s.sc);
+ const log={id:"L"+Date.now(),name:me.name,inst:me.inst,lv:me.lv,date:today(),secs,
+  total:secs.reduce((a,b)=>a+b.min,0),avg:g.length?+(g.reduce((a,b)=>a+b,0)/g.length).toFixed(1):0,
+  note:dayNote.value,fb:""};
+ const all=get("vp_logs");all.push(log);set("vp_logs",all);
+ const st=calcStreak(all.filter(l=>l.name===me.name).map(l=>l.date));
+ alert(`บันทึกสำเร็จ! 🎉\nรวม ${log.total} นาที | คะแนนเฉลี่ย ${log.avg}/5\n🔥 ซ้อมต่อเนื่อง ${st} วันแล้ว`);
+ dayNote.value="";renderStudent();
+}
+function renderMyLogs(L){
+ myLogsBox.innerHTML=L.length?L.slice(0,12).map(l=>`
+  <div class="log"><b>${l.date}</b> — ${l.total} นาที | เฉลี่ย ${l.avg}/5
+   ${l.secs.map(s=>`<div class="mut">• ${s.t}: ${s.min} น. ${"★".repeat(s.sc)}${s.title?" — <span style='color:#e8edf7'>"+s.title+"</span>":""}${s.note?" ↳ "+s.note:""}</div>`).join("")}
+   ${l.note?`<div style="margin-top:6px">📝 ${l.note}</div>`:""}
+   ${l.fb?`<div style="margin-top:6px;color:#39c17f">👩‍🏫 ครู: ${l.fb}</div>`:""}
+  </div>`).join(""):'<p class="mut">ยังไม่มีบันทึก เริ่มซ้อมวันนี้กันเลย!</p>';
+}
+
+/* ================= 8. หน้าครู ================= */
+function renderTeacher(){
+ const logs=get("vp_logs"),studs=get("vp_students");
+ tSum.textContent=`นักเรียน ${studs.length} คน • บันทึกทั้งหมด ${logs.length} ครั้ง • ซ้อมวันนี้ ${new Set(logs.filter(l=>l.date===today()).map(l=>l.name)).size} คน`;
+ let h=`<tr><th>นักเรียน</th><th>เครื่อง</th><th>🔥</th><th>ครั้ง</th><th>นาทีรวม</th><th>สัปดาห์นี้</th><th>เฉลี่ย</th><th>ล่าสุด</th><th>วันนี้</th></tr>`;
+ studs.forEach(s=>{const L=logs.filter(l=>l.name===s.name),sc=L.filter(l=>l.avg>0);
+  const wk=weekly(L,8)[7];
+  h+=`<tr class="clk" onclick="detail('${s.name.replace(/'/g,"\\'")}')"><td><b>${s.name}</b></td>
+   <td>${s.inst==="violin"?"Vln":"Vla"}</td><td>${calcStreak(L.map(l=>l.date))}</td><td>${L.length}</td>
+   <td>${L.reduce((a,b)=>a+b.total,0)}</td><td>${wk.min} น./${wk.days} วัน</td>
+   <td>${sc.length?(sc.reduce((a,b)=>a+b.avg,0)/sc.length).toFixed(1):"-"}</td>
+   <td>${L.length?L.map(l=>l.date).sort().pop():"-"}</td>
+   <td>${L.some(l=>l.date===today())?"✅":"⬜"}</td></tr>`;});
+ tTable.innerHTML=h;
+}
+function detail(n){
+ const L=logsOf(n);
+ tDetail.innerHTML=`<h3 style="color:#f0a830">${n}</h3>
+  <div id="tSumBox" class="mut"></div>
+  <div class="legend"><span class="lg1"></span>นาทีที่ซ้อม <span class="lg2"></span>คะแนนเฉลี่ย (เต็ม 5)</div>
+  <canvas id="tCvWeek"></canvas>
+  <h3 style="margin-top:14px">รายวัน 7 วันล่าสุด</h3><canvas id="tCvDay"></canvas>
+  <h3 style="margin-top:16px">บันทึกย้อนหลัง</h3>`+
+  (L.map(l=>`<div class="log"><b>${l.date}</b> — ${l.total} นาที | เฉลี่ย ${l.avg}/5
+   ${l.secs.map(s=>`<div class="mut">• ${s.t}: ${s.min} น. ${"★".repeat(s.sc)}<br><span style="font-size:11px">${s.detail}</span>${s.note?"<br>↳ "+s.note:""}</div>`).join("")}
+   ${l.note?`<div style="margin-top:6px">📝 ${l.note}</div>`:""}
+   <div class="row" style="margin-top:8px"><input id="fb_${l.id}" value="${(l.fb||"").replace(/"/g,"&quot;")}" placeholder="คำแนะนำจากครู...">
+   <button class="btn-g" style="max-width:110px" onclick="sendFB('${l.id}')">ส่ง</button></div></div>`).join("")||'<p class="mut">ยังไม่มีบันทึก</p>');
+ renderCharts("tCvWeek","tCvDay","tSumBox",L);
+ tDetailCard.scrollIntoView({behavior:"smooth"});
+}
+function sendFB(id){const a=get("vp_logs"),i=a.findIndex(l=>l.id===id);
+ a[i].fb=document.getElementById("fb_"+id).value;set("vp_logs",a);alert("ส่งคำแนะนำเรียบร้อย");detail(a[i].name);}
+function exportCSV(){
+ const rows=[["วันที่","ชื่อ","เครื่องดนตรี","ระดับ","หัวข้อ","ชื่อเพลง/แบบฝึกหัด","รายละเอียด","นาที","คะแนน","โน้ตนักเรียน","บันทึกถึงครู","คำแนะนำครู"]];
+ get("vp_logs").forEach(l=>l.secs.forEach(s=>rows.push([l.date,l.name,l.inst,l.lv,s.t,s.title||"-",s.detail,s.min,s.sc,s.note||"",l.note||"",l.fb||""])));
+ const csv="\uFEFF"+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+ dl(new Blob([csv],{type:"text/csv"}),"practice_"+today()+".csv");
+}
+function backup(){dl(new Blob([JSON.stringify({s:get("vp_students"),l:get("vp_logs")})],{type:"application/json"}),"backup_"+today()+".json");}
+function dl(b,n){const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=n;a.click();}
+function wipe(){if(confirm("ลบข้อมูลทั้งหมดถาวร?")&&confirm("ยืนยันอีกครั้ง — ควรสำรองข้อมูลก่อน")){localStorage.clear();location.reload();}}
+
+/* ================= 9. เริ่มต้น ================= */
+window.addEventListener("resize",()=>{
+ if(!document.getElementById("vStudent").classList.contains("hidden")&&me)renderCharts("cvWeek","cvDay","sumBox",logsOf(me.name));});
+const _s=sessionStorage.getItem("vp_me");
+if(_s){me=JSON.parse(_s);show("vStudent");renderStudent();}
+</script>
+</div></body></html>
